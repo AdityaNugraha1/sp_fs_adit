@@ -8,3 +8,14 @@ tmp/nanoc/
 
 # Crash Log
 crash.log
+
+# Node
+node_modules/
+.wrangler/
+dev-dist/
+node_modules/
+.wrangler/
+dev-dist/
+frontend/.next/
+frontend/.vercel/
+frontend/out/

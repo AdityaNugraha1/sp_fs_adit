@@ -1,8 +1,6 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
-import { io } from 'socket.io-client';
-import { useRouter } from 'next/navigation';
 
 export default function Dashboard() {
   const [projects, setProjects] = useState([]);
@@ -12,7 +10,6 @@ export default function Dashboard() {
   const [errorMsg, setErrorMsg] = useState('');
   const [allProjects, setAllProjects] = useState([]);
   const [ownerEmails, setOwnerEmails] = useState({});
-  const socketRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('token');
@@ -61,35 +58,7 @@ export default function Dashboard() {
     return () => window.removeEventListener('storage', onStorage);
   }, []);
 
-  useEffect(() => {
-    // Setup socket.io for realtime project update
-    socketRef.current = io(process.env.NEXT_PUBLIC_API_URL.replace('/api', ''));
-    socketRef.current.on('projectUpdate', async (data) => {
-      if (data.type === 'create') {
-        setAllProjects(prev => {
-          const updated = [...prev, data.project];
-          // Ambil ownerId baru yang belum ada di ownerEmails
-          const newOwnerId = data.project.ownerId;
-          if (newOwnerId && !ownerEmails[newOwnerId]) {
-            // Fetch email owner baru
-            axios.post(`${process.env.NEXT_PUBLIC_API_URL}/users/emails`, { ids: [newOwnerId] })
-              .then(result => {
-                setOwnerEmails(prevEmails => ({
-                  ...prevEmails,
-                  ...result.data
-                }));
-              });
-          }
-          return updated;
-        });
-      }
-    });
-    return () => {
-      socketRef.current.disconnect();
-    };
-  // tambahkan ownerEmails sebagai dependency agar update email jika ada owner baru
-  }, [ownerEmails]);
-
+  // ponytail: realtime was socket.io (dead on Workers). Re-fetch after mutations instead.
   function handleLogout() {
     localStorage.removeItem('token');
     localStorage.removeItem('userEmail');
@@ -110,6 +79,7 @@ export default function Dashboard() {
       });
       setName('');
       setErrorMsg('');
+      window.location.reload();
     } catch {
       setErrorMsg('Gagal menambahkan project. Pastikan Anda sudah login.');
     }

@@ -3,8 +3,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -15,7 +15,7 @@ model User {
   memberships Membership[]
   tasks     Task[]    @relation("TaskAssignee")
   createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
+  updatedAt DateTime  @default(now()) @updatedAt
 }
 
 model Project {
@@ -26,7 +26,7 @@ model Project {
   memberships Membership[]
   tasks     Task[]
   createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
+  updatedAt DateTime     @default(now()) @updatedAt
 }
 
 model Membership {
@@ -36,7 +36,7 @@ model Membership {
   project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
   projectId String
   createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  updatedAt DateTime @default(now()) @updatedAt
 
   @@unique([userId, projectId])
 }
@@ -51,5 +51,5 @@ model Task {
   assignee    User?    @relation("TaskAssignee", fields: [assigneeId], references: [id])
   assigneeId  String?
   createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  updatedAt   DateTime @default(now()) @updatedAt
 }

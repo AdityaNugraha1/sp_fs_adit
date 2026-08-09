@@ -1,8 +1,7 @@
 'use client';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import axios from 'axios';
 import { useParams, useRouter } from 'next/navigation';
-import { io } from 'socket.io-client';
 import { Bar } from 'react-chartjs-2';
 import Chart from 'chart.js/auto';
 
@@ -14,7 +13,6 @@ export default function ProjectBoard() {
   const [members, setMembers] = useState([]);
   const [analytics, setAnalytics] = useState([]);
   const [accessDenied, setAccessDenied] = useState(false);
-  const socketRef = useRef(null);
 
   // Form fields
   const [assignee, setAssignee] = useState('');
@@ -36,11 +34,8 @@ export default function ProjectBoard() {
     return token;
   };
 
-  useEffect(() => {
-    const token = getToken();
-    if (!token) return;
-
-    // Fungsi untuk handle error
+  // ponytail: realtime was socket.io (dead on Workers). All mutations now re-fetch via load().
+  const load = (token) => {
     const handleApiError = (error) => {
       if (error.response?.status === 401 || error.response?.status === 403) {
         setAccessDenied(true);
@@ -49,7 +44,6 @@ export default function ProjectBoard() {
       }
     };
 
-    // Fetch project data
     axios
       .get(`${process.env.NEXT_PUBLIC_API_URL}/projects/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -61,71 +55,19 @@ export default function ProjectBoard() {
       })
       .catch(handleApiError);
 
-    // Fetch analytics
     axios
       .get(`${process.env.NEXT_PUBLIC_API_URL}/projects/${id}/analytics`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setAnalytics(res.data))
       .catch(handleApiError);
+  };
 
-    // Initialize Socket.IO
-    socketRef.current = io(process.env.NEXT_PUBLIC_API_URL.replace('/api', ''), {
-      auth: { token }
-    });
-    socketRef.current.emit('joinProject', id);
-
-    socketRef.current.on('taskUpdate', ({ type, task, taskId }) => {
-      const updateToken = getToken();
-      if (!updateToken) return;
-
-      setTasks((prev) => {
-        let updatedTasks;
-        if (type === 'create' || type === 'update') {
-          let newTask = { ...task };
-          if (newTask.assigneeId && !newTask.assignee) {
-            const found = members.find((m) => m.id === newTask.assigneeId);
-            if (found) {
-              newTask.assignee = { id: found.id, email: found.email };
-            } else {
-              newTask.assignee = null;
-            }
-          }
-          if (type === 'create') {
-            updatedTasks = [...prev, newTask];
-          } else {
-            updatedTasks = prev.map((t) => (t.id === task.id ? newTask : t));
-          }
-        } else if (type === 'delete') {
-          updatedTasks = prev.filter((t) => t.id !== taskId);
-        } else {
-          updatedTasks = prev;
-        }
-        return updatedTasks;
-      });
-
-      axios
-        .get(`${process.env.NEXT_PUBLIC_API_URL}/projects/${id}/analytics`, {
-          headers: { Authorization: `Bearer ${updateToken}` },
-        })
-        .then((res) => setAnalytics(res.data))
-        .catch(handleApiError);
-    });
-
-    socketRef.current.on('connect_error', (err) => {
-      if (err.message === 'Authentication error') {
-        localStorage.removeItem('token');
-        router.push('/login');
-      }
-    });
-
-    return () => {
-      if (socketRef.current) {
-        socketRef.current.emit('leaveProject', id);
-        socketRef.current.disconnect();
-      }
-    };
-  }, [id, members, router]);
+  useEffect(() => {
+    const token = getToken();
+    if (!token) return;
+    load(token);
+  }, [id]);
 
   // Fungsi-fungsi lainnya tetap sama, tapi tambahkan pengecekan token di awal
   async function addTask(e) {
@@ -154,6 +96,7 @@ export default function ProjectBoard() {
       setAssignee('');
       setStatus('todo');
       setIsAddingTask(false);
+      load(token);
     } catch (error) {
       if (error.response?.status === 401) {
         localStorage.removeItem('token');
@@ -188,6 +131,7 @@ export default function ProjectBoard() {
       setAssignee('');
       setStatus('todo');
       setEditingTask(null);
+      load(token);
     } catch (error) {
       setErrorMsg('Gagal memperbarui task. Silakan coba lagi.');
     }
@@ -218,6 +162,7 @@ export default function ProjectBoard() {
         headers: { Authorization: `Bearer ${token}` },
       }
     );
+    load(token);
   }
 
   async function deleteTask(taskId) {
@@ -225,6 +170,7 @@ export default function ProjectBoard() {
     await axios.delete(`${process.env.NEXT_PUBLIC_API_URL}/tasks/${taskId}`, {
       headers: { Authorization: `Bearer ${token}` }
     });
+    load(token);
   }
 
   async function exportProject() {

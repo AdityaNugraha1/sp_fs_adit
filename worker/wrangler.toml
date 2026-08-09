@@ -1,0 +1,11 @@
+name = "spfs-be"
+main = "src/index.js"
+compatibility_date = "2026-08-09"
+compatibility_flags = ["nodejs_compat"]
+
+routes = [
+  { pattern = "api.spfs.keviinnn.my.id", custom_domain = true }
+]
+
+[vars]
+JWT_SECRET = "supersecretkey"
