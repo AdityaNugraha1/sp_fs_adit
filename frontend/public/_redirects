@@ -1,2 +1,4 @@
+# SPA fallback for dynamic project routes (static export has only the placeholder route).
+# Targets end in "/" to match trailingSlash output and avoid Pages' .html-strip 308.
 /projects/*/settings /projects/placeholder/settings/ 200
 /projects/* /projects/placeholder/ 200

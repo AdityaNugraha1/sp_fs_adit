@@ -7,5 +7,7 @@ routes = [
   { pattern = "api.spfs.keviinnn.my.id", custom_domain = true }
 ]
 
-[vars]
-JWT_SECRET = "supersecretkey"
+# Secrets are set via `wrangler secret put <NAME>`, NOT stored here:
+#   JWT_SECRET      - signing key for auth tokens
+#   DATABASE_URL    - Neon Postgres connection string
+# [vars] is intentionally empty so nothing sensitive lands in git.
