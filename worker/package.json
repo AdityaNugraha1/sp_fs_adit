@@ -10,7 +10,8 @@
     "@neondatabase/serverless": "^0.10.4",
     "bcryptjs": "^2.4.3",
     "hono": "^4.6.14",
-    "jose": "^5.9.6"
+    "jose": "^5.9.6",
+    "zod": "^4.6.5"
   },
   "devDependencies": {
     "wrangler": "^4.120.0"

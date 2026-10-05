@@ -17,32 +17,35 @@ export default function Dashboard() {
     setUserEmail(email || '');
     setIsLoggedIn(!!token);
 
-    // Ambil semua project (tanpa auth)
-    axios.get(`${process.env.NEXT_PUBLIC_API_URL}/all-projects`)
-      .then(async res => {
-        setAllProjects(res.data);
-        // Ambil daftar unique ownerId
-        const ownerIds = [...new Set(res.data.map(p => p.ownerId).filter(Boolean))];
-        if (ownerIds.length > 0) {
-          const result = await axios.post(`${process.env.NEXT_PUBLIC_API_URL}/users/emails`, { ids: ownerIds });
-          setOwnerEmails(result.data);
-        } else {
-          setOwnerEmails({});
-        }
-      })
-      .catch(() => {
-        setAllProjects([]);
-        setOwnerEmails({});
-      });
-
-    // Ambil project yang user bisa akses (jika login)
+    // Semua project yang bisa diakses user (butuh auth)
     if (token) {
-      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/projects`, {
-        headers: { Authorization: `Bearer ${token}` }
-      })
+      const authHeaders = { Authorization: `Bearer ${token}` };
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/all-projects`, { headers: authHeaders })
+        .then(async res => {
+          setAllProjects(res.data);
+          // Ambil daftar unique ownerId
+          const ownerIds = [...new Set(res.data.map(p => p.ownerId).filter(Boolean))];
+          if (ownerIds.length > 0) {
+            const result = await axios.post(
+              `${process.env.NEXT_PUBLIC_API_URL}/users/emails`,
+              { ids: ownerIds },
+              { headers: authHeaders });
+            setOwnerEmails(result.data);
+          } else {
+            setOwnerEmails({});
+          }
+        })
+        .catch(() => {
+          setAllProjects([]);
+          setOwnerEmails({});
+        });
+
+      axios.get(`${process.env.NEXT_PUBLIC_API_URL}/projects`, { headers: authHeaders })
         .then(res => setProjects(res.data))
         .catch(() => setProjects([]));
     } else {
+      setAllProjects([]);
+      setOwnerEmails({});
       setProjects([]);
     }
   }, []);
