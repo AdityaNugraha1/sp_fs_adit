@@ -1,21 +1,16 @@
-# For projects using Nanoc (http://nanoc.ws/)
-
-# Default location for output (needs to match output_dir's value found in nanoc.yaml)
-output/
-
-# Temporary file directory
-tmp/nanoc/
-
-# Crash Log
-crash.log
-
 # Node
 node_modules/
 .wrangler/
 dev-dist/
-node_modules/
-.wrangler/
-dev-dist/
+
+# Next.js / build output
 frontend/.next/
 frontend/.vercel/
 frontend/out/
+
+# Secrets & local data - never commit
+backend/.env
+*.db
+*.db-journal
+.dev.vars
+.env.local
